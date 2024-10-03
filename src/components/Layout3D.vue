@@ -44,15 +44,23 @@ const objects3d = computed(() => {
 });
 
 // Function to map Konva 2D positions to Three.js 3D positions
-function mapKonvaTo3D(obj, scaleFactor = 0.01) {
+function mapKonvaTo3D(obj, scaleFactor = 0.01, rotationFactor = 0.1) {
     let copy = { ...obj }; // Deep copy the object to prevent mutation of the original
     copy.position = [...obj.position]; // Make sure position is also a copy
     copy.position[0] = obj.position[0] * scaleFactor; // X-axis
     copy.position[1] = 0; // Y-axis (height in Three.js, Z = 0 in 2D space)
     copy.position[2] = obj.position[1] * scaleFactor; // Z-axis (converted from Konva Y)
+    copy.rotation = [...(obj.rotation || [0, 0, 0])]; // Ensure rotation array exists
+    copy.scale[2] = obj.scale[2] *(-1); // Ensure rotation array exists
+
+    copy.rotation[1] = -1 * degreesToRadians((obj.rotation[1] || 0),180);
     return copy;
 }
 
+// Utility function to convert degrees to radians
+function degreesToRadians(degrees,fixRotation=1) {
+    return (degrees + fixRotation) * ((Math.PI /180));
+}
 </script>
 
 

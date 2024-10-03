@@ -5,16 +5,17 @@
       <v-btn class="tab" @click="selectedTab = 2"> 3D View</v-btn>
       <v-btn class="tab" @click="selectedTab = 3"> Walkthrough</v-btn>
       <v-btn class="tab" @click="reset"> Reset positions</v-btn>
+      <v-btn class="tab" @click="reset"> +15 </v-btn>
     </div>
     <div class="tabs-content">
       <div style="width: 700px">
-        <Layout2D v-if="selectedTab == 1" :objects="data" @updateData="on2DDataUpdated" @oNAddToStage="addToStage" @onRemove="onRemove" />
+        <Layout2D  :objects="data" @updateData="on2DDataUpdated" @oNAddToStage="addToStage" @onRemove="onRemove" />
       </div>
       <div style="width: 700px">
-        <Layout3D v-if="selectedTab == 2" :objects="data" @updateData="on3DDataUpdated" />
+        <Layout3D  :objects="data" @updateData="on3DDataUpdated" />
       </div>
       <div style="width: 700px">
-        <Layout3D v-if="selectedTab == 3" :objects="data" @updateData="on3DDataUpdated" />
+        <Layout3DTest v-if="selectedTab == 3" :objects="data" @updateData="on3DDataUpdated" />
       </div>
     </div>
   </div>
@@ -23,6 +24,9 @@
 <script>
 import Layout2D from '@/components/Layout2D.vue'
 import Layout3D from '@/components/Layout3D.vue'
+import Layout3DTest from '@/components/Layout3DTest.vue'
+import {getObjects} from '@/api/objectsDataApi'
+// import {generateUUID} from '@/helpers/utils'
 const paths = ["ASSET.glb", 'https://raw.githubusercontent.com/Tresjs/assets/main/models/gltf/ugly-naked-bunny/ugly-naked-bunny-animated.gltf', 'Blocks.glb']
 const getRandom = (min = 1, max = 10) => {
   return Math.floor(Math.random() * (max - min + 1) + min);
@@ -32,13 +36,26 @@ export default {
   name: "2D Layout",
   components: {
     Layout2D,
-    Layout3D
+    Layout3D,
+    Layout3DTest
   },
   data() {
     return {
       selectedTab: 1,
-      data: [],
-      updateRotation: 0
+      updateRotation: 0,
+      objects:[],
+      data:[]
+    }
+  },
+  computed:{
+    data1(){
+      const comp = []
+      for(let o of  this.objects){
+        o.id = o._id
+        comp[o.id] = o
+      }
+      
+      return comp
     }
   },
   methods: {
@@ -95,16 +112,29 @@ export default {
       const position = object.position()
       const rotation = object.rotation()
       const scale = object.scale()
-      const selected = this.data.find((i) => i.id === object.id())
+      const selected = this.data[object.id()]
+      console.log("selected",selected, object)
       selected.position[0] = position.x
       selected.position[1] = position.y
-      selected.rotation[0] = rotation
+      selected.rotation[1] = rotation
       selected.scale[0] = scale.x
       selected.scale[1] = scale.y
       this.data[selected.id] = selected
     }
   },
+  async created(){
+    const response = await getObjects()
+    console.log("response",response.data)
+    if(!response || response.status != 200) return
+    for(let i = 0;i<response.data.length;i++){
+      let obj = response.data[i]
+      obj.id = i
+      this.data[i] = obj
+    }
+  },
   mounted() {
+    
+
     // const model = {
     //   path: 'https://raw.githubusercontent.com/Tresjs/assets/main/models/gltf/ugly-naked-bunny/ugly-naked-bunny-animated.gltf',
     //   position: [0.0, 0.0, 0.0],
@@ -144,5 +174,9 @@ export default {
 
 .clear {
   margin: 0;
+}
+
+.tabs-content{
+  display: flex;
 }
 </style>
