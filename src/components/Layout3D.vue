@@ -23,7 +23,7 @@
 import { TresCanvas } from '@tresjs/core';
 import { OrbitControls } from '@tresjs/cientos';
 import { BasicShadowMap, SRGBColorSpace, NoToneMapping } from 'three'
-import Model3D from '@/components/Model3d.vue'
+import Model3D from '@/components/Model3D.vue'
 import { ref, onMounted, watch, computed } from 'vue';
 const gl = {
     clearColor: '#F78B3D',
