@@ -100,8 +100,9 @@ function animate() {
     renderer.render(scene, camera);
 }
 
-const buildWallFromLine = (scene,line) =>{
-    
+const buildWallFromLine = (scene,line1) =>{
+    console.log(line1)
+    const line  = line1
     const x1 = line[0]
     const y1 = line[1]
     const x2 = line[2]
@@ -137,12 +138,22 @@ const angle = Math.atan2(pointB.z - pointA.z, pointB.x - pointA.x);
 wallMesh.rotation.y = -angle; // Rotate around the Y-axis
 
 // Add the wall to the scene
-scene.add(wallMesh);
+// scene.add(wallMesh);
 
-return {
+const response = {
     wallMesh,
-    mesh:{wallLength, wallHeight, wallThickness, position:{x:midpointX, y:midpointY, z:midpointZ},angle:-angle}
+    mesh:{
+        wallLength, 
+        wallHeight, 
+        wallThickness, 
+        position:{x:midpointX, y:midpointY, z:midpointZ},
+        angle:-angle
+    }
 }
+
+console.log("response",response)
+
+return response
 
 }
 

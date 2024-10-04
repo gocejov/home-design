@@ -9,14 +9,18 @@
                     <Model3D :path="obj.path" :position="obj.position" :scale="obj.scale"
                         :rotation="obj.rotation" />
                 </Suspense>
-                <!-- <Suspense v-for="obj in objects3d" :key="obj">
-                    <Mesh>
-                        <MeshBasicMaterial />
-                        <BoxGeometry />
+                <Suspense v-for="wall in buildWallFromLine(null,line1)" :key="wall">
+                    <Mesh 
+                        :position="wall.mesh.position"
+                        :rotation="{y:wall.mesh.angle}"
+                    >
+                        <MeshBasicMaterial color="0x888888" />
+                        <BoxGeometry 
+                            :width="wall.mesh.wallLength"
+                            :height="wall.mesh.wallHeight"
+                            :depth="wall.mesh.wallThickness" />
                     </Mesh>
-                    <Model3D :path="obj.path" :position="obj.position" :scale="obj.scale"
-                        :rotation="obj.rotation" />
-                </Suspense> -->
+                </Suspense>
                 <TresDirectionalLight color="#F78B3D" :position="[3, 3, 3]" :intensity="1" />
                 <TresAmbientLight :intensity="2" />
                 <TresGridHelper />
@@ -49,6 +53,7 @@ const gl = {
 const controls = ref(null);
 const camera = ref(null);
 const ratio = 0.005
+const line1 = ref( [0,5,5,5])
 
 const wallMeshes = []
 
@@ -182,7 +187,7 @@ onMounted(()=> {
     2.5
 ].map(el => el*ratio)
 
-    const line1 = [0,5,5,5]
+    line1 = [0,5,5,5]
     const line2 = [0,0,5,0]
     const line3 = [0,0,0,5]
     const line4 = [5,0,5,5]
