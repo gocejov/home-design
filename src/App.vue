@@ -9,13 +9,13 @@
     </div>
     <div class="tabs-content">
       <div style="width: 700px">
-        <Layout2D  :objects="data" @updateData="on2DDataUpdated" @oNAddToStage="addToStage" @onRemove="onRemove" />
+        <Layout2D  :objects="data" @updateData="on2DDataUpdated" @updatePolygons="onUpdatePolygons" @oNAddToStage="addToStage" @onRemove="onRemove" />
       </div>
       <div style="width: 700px">
-        <Layout3D  :objects="data" @updateData="on3DDataUpdated" />
+        <Layout3D  :objects="data" :polygons="polygons" @updateData="on3DDataUpdated" />
       </div>
       <div style="width: 700px">
-        <Layout3DTest v-if="selectedTab == 3" :objects="data" @updateData="on3DDataUpdated" />
+        <Layout3DTest  v-if="selectedTab == 3" :objects="data" :points="points" @updateData="on3DDataUpdated" />
       </div>
     </div>
   </div>
@@ -44,7 +44,9 @@ export default {
       selectedTab: 1,
       updateRotation: 0,
       objects:[],
-      data:[]
+      data:[],
+      // Simple square room
+      polygons:[] 
     }
   },
   computed:{
@@ -107,6 +109,11 @@ export default {
       if(!position) model.position = [getRandom(1, 10), 0, 0]
       else model.position = [position.x, position.y, 0]
       this.data[model.id] = model
+    },
+    onUpdatePolygons(polygons){
+      console.log("this.polygons.update App",polygons)
+      this.polygons = polygons
+      console.log("this.polygons.update this App",this.polygons)
     },
     on2DDataUpdated(object) {
       const position = object.position()

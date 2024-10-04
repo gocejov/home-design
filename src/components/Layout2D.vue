@@ -86,6 +86,15 @@ export default {
       });
     },
   },
+  watch:{
+    polygons:{
+      handler(newValue, oldValue) {
+        console.log("this.polygons.update L2")
+       this.$emit("updatePolygons",this.polygons)
+      },
+      deep: true
+    }
+  },
   methods: {
 
     startDrawing(event) {
