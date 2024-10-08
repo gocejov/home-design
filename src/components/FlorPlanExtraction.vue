@@ -16,14 +16,50 @@
                 <v-line v-for="(line, index) in lines" :key="index" :config="line" />
             </v-layer>
         </v-stage>
+
+        <!-- Controls for Canny Edge Detection -->
+        <div>
+            <label for="threshold1">Canny Threshold 1:</label>
+            <input
+                id="threshold1"
+                type="range"
+                v-model="cannyThreshold"
+                min="0"
+                max="255"
+                @input="updateLines"
+            />
+            <span>{{ cannyThreshold }}</span>
+
+            <label for="threshold2">Canny Threshold 2:</label>
+            <input
+                id="threshold2"
+                type="range"
+                v-model="cannyThreshold2"
+                min="0"
+                max="255"
+                @input="updateLines"
+            />
+            <span>{{ cannyThreshold2 }}</span>
+
+            <label for="lineWidth">Line Stroke Width:</label>
+            <input
+                id="lineWidth"
+                type="range"
+                v-model="lineStrokeWidth"
+                min="1"
+                max="10"
+                @input="updateLines"
+            />
+            <span>{{ lineStrokeWidth }}</span>
+        </div>
     </div>
 </template>
 
 <script>
-// import { Stage, Layer, Line, Image } from 'vue-konva';
-// import Konva from "konva";
+import Konva from 'konva';
 
 export default {
+
     data() {
         return {
             displayImage: true,
@@ -37,6 +73,9 @@ export default {
                 height: 600,
             },
             lines: [],
+            cannyThreshold: 50, // Initial value for Canny Threshold 1
+            cannyThreshold2: 150, // Initial value for Canny Threshold 2
+            lineStrokeWidth: 2, // Initial stroke width
         };
     },
     methods: {
@@ -69,6 +108,11 @@ export default {
             reader.readAsDataURL(file);
         },
 
+        // Update lines based on input from controls
+        updateLines() {
+            this.extractLines(); // Re-extract lines based on updated parameters
+        },
+
         // Edge detection and line extraction
         extractLines() {
             const src = cv.imread(this.$refs.imageCanvas); // Read from canvas
@@ -78,13 +122,14 @@ export default {
 
             // Convert to grayscale
             cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-            // Apply Canny Edge Detection
-            cv.Canny(gray, edges, 50, 150);
+            // Apply Canny Edge Detection with current thresholds
+            cv.Canny(gray, edges, parseFloat(this.cannyThreshold), parseFloat(this.cannyThreshold2)); // Ensure proper type
 
             // Find contours
             cv.findContours(edges, contours, new cv.Mat(), cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE);
 
-            this.lines = [];
+            // Clear previous lines
+            this.lines = []; 
             for (let i = 0; i < contours.size(); i++) {
                 const contour = contours.get(i);
                 const points = [];
@@ -95,7 +140,7 @@ export default {
                     this.lines.push({
                         points: points,
                         stroke: "black",
-                        strokeWidth: 1, // Thinner lines
+                        strokeWidth: this.lineStrokeWidth, // Use dynamic stroke width
                         lineCap: "round",
                         lineJoin: "round",
                     });
