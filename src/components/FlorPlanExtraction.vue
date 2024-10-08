@@ -10,13 +10,23 @@
         <canvas ref="canvasOutput" width="508" height="472"></canvas>
 
         <!-- Konva Stage to display extracted lines -->
-        <v-stage :config="stageConfig">
+        <v-stage
+            :config="stageConfig"
+            @mousemove="updateMousePosition"
+            @mousedown="onMouseDown"
+            @mouseup="onMouseUp"
+        >
             <v-layer>
                 <v-image v-if="displayImage" :config="imageConfig" />
                 <v-line
                     v-for="(line, index) in lines"
                     :key="index"
                     :config="line"
+                    @click="handleLineClick(index)"
+                />
+                <v-circle
+                    v-if="eraserMode"
+                    :config="eraserCircleConfig"
                 />
             </v-layer>
         </v-stage>
@@ -100,6 +110,22 @@
                 @input="updateLines"
             />
             <span>{{ lineStrokeWidth }}</span>
+
+            <label for="eraserRadius">Eraser Radius:</label>
+            <input
+                id="eraserRadius"
+                type="range"
+                v-model="eraserRadius"
+                min="5"
+                max="100"
+                @input="updateEraserCircle"
+            />
+            <span>{{ eraserRadius }}</span>
+
+            <label>
+                <input type="checkbox" v-model="eraserMode" />
+                Line Eraser Mode
+            </label>
         </div>
     </div>
 </template>
@@ -108,7 +134,7 @@
 import Konva from 'konva';
 
 export default {
-
+    
     data() {
         return {
             displayImage: true,
@@ -124,14 +150,34 @@ export default {
             lines: [],
             cannyThreshold: 50,
             cannyThreshold2: 150,
-            gaussianKernel: 1, // Kernel size for Gaussian blur
-            minLineLength: 10, // Minimum line length
-            maxLineGap: 5, // Maximum gap between points on the line
+            gaussianKernel: 1,
+            minLineLength: 10,
+            maxLineGap: 5,
             lineStrokeWidth: 2,
-            lineColor: '#000000', // Default line color
+            lineColor: '#000000',
+            eraserMode: false,
+            eraserRadius: 20,
+            mousePos: {
+                x: 0,
+                y: 0,
+            },
+            eraserCircleConfig: {
+                x: 0,
+                y: 0,
+                radius: 20,
+                stroke: 'red',
+                strokeWidth: 2,
+                opacity: 0.5,
+            },
         };
     },
     methods: {
+         // Get mouse position relative to the stage
+        getRelativePointerPosition(stage) {
+        const transform = stage.getAbsoluteTransform().copy();
+        transform.invert();
+        return transform.point(stage.getPointerPosition());
+        },
         showHideImage() {
             this.displayImage = !this.displayImage;
         },
@@ -214,12 +260,55 @@ export default {
             edges.delete();
             contours.delete();
         },
+
+        handleLineClick(index) {
+            if (this.eraserMode) {
+                // Remove the clicked line
+                this.lines.splice(index, 1);
+            }
+        },
+
+        updateMousePosition(event) {
+            const stage = event.target.getStage();
+            const pointerPosition = this.getRelativePointerPosition(stage);
+            this.mousePos.x = pointerPosition.x;
+            this.mousePos.y = pointerPosition.y;
+            this.updateEraserCircle();
+        },
+
+        updateEraserCircle() {
+            this.eraserCircleConfig.x = this.mousePos.x;
+            this.eraserCircleConfig.y = this.mousePos.y;
+            this.eraserCircleConfig.radius = this.eraserRadius;
+        },
+
+        onMouseDown(event) {
+            if (this.eraserMode) {
+                // Prevent default behavior when in eraser mode
+                event.evt.preventDefault();
+                this.eraseLines();
+            }
+        },
+
+        eraseLines() {
+            const { x, y } = this.mousePos;
+            this.lines = this.lines.filter((line) => {
+                const lineCenterX = (line.points[0] + line.points[2]) / 2; // Simplistic way to find line center
+                const lineCenterY = (line.points[1] + line.points[3]) / 2;
+                const distance = Math.sqrt((lineCenterX - x) ** 2 + (lineCenterY - y) ** 2);
+                return distance > this.eraserRadius; // Keep lines not erased
+            });
+        },
+
+        onMouseUp(event) {
+            // Additional functionality can be added here if needed
+        },
     },
 };
 </script>
 
 <style scoped>
 canvas {
-    /* display: none; */
+    border: 1px solid black;
 }
 </style>
