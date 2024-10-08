@@ -1,22 +1,28 @@
 <template>
+  
   <div class="clear">
+    <FlorPlanExtraction  v-if="selectedTab == 3"/>
     <div class="tabs">
       <v-btn class="tab" @click="selectedTab = 1"> 2D View </v-btn>
       <v-btn class="tab" @click="selectedTab = 2"> 3D View</v-btn>
-      <v-btn class="tab" @click="selectedTab = 3"> Walkthrough</v-btn>
+      <v-btn class="tab" @click="selectedTab = 3"> Flor plan</v-btn>
+      <v-btn class="tab" @click="selectedTab = 4"> Walkthrough</v-btn>
       <v-btn class="tab" @click="reset"> Reset positions</v-btn>
       <v-btn class="tab" @click="reset"> +15 </v-btn>
     </div>
     <div class="tabs-content">
       <div style="width: 700px">
-        <Layout2D  :objects="data" @updateData="on2DDataUpdated" @updatePolygons="onUpdatePolygons" @oNAddToStage="addToStage" @onRemove="onRemove" />
+        <Layout2D v-if="selectedTab == 1"  :objects="data" @updateData="on2DDataUpdated" @updatePolygons="onUpdatePolygons" @oNAddToStage="addToStage" @onRemove="onRemove" />
       </div>
       <div style="width: 700px">
-        <Layout3D  :objects="data" :polygons="polygons" @updateData="on3DDataUpdated" />
+        <Layout3D  v-if="selectedTab == 2" :objects="data" :polygons="polygons" @updateData="on3DDataUpdated" />
       </div>
-      <div style="width: 700px">
-        <Layout3DTest  v-if="selectedTab == 3" :objects="data" :points="points" @updateData="on3DDataUpdated" />
+      <div >
+        <FlorPlanExtraction  v-if="selectedTab == 3"/>
       </div>
+      <!-- <div style="width: 700px">
+        <Layout3DTest  v-if="selectedTab == 4" :objects="data" :points="points" @updateData="on3DDataUpdated" />
+      </div> -->
     </div>
   </div>
 </template>
@@ -24,6 +30,7 @@
 <script>
 import Layout2D from '@/components/Layout2D.vue'
 import Layout3D from '@/components/Layout3D.vue'
+import FlorPlanExtraction from '@/components/FlorPlanExtraction.vue'
 import Layout3DTest from '@/components/Layout3DTest.vue'
 import {getObjects} from '@/api/objectsDataApi'
 // import {generateUUID} from '@/helpers/utils'
@@ -37,7 +44,8 @@ export default {
   components: {
     Layout2D,
     Layout3D,
-    Layout3DTest
+    Layout3DTest,
+    FlorPlanExtraction
   },
   data() {
     return {

@@ -135,6 +135,8 @@ export default {
       console.log(this.polygons)
     },
 
+    
+
     // Get mouse position relative to the stage
     getRelativePointerPosition(stage) {
       const transform = stage.getAbsoluteTransform().copy();

@@ -20,6 +20,8 @@
 </template>
 
 <script setup>
+
+import * as THREE from 'three'
 const length = 12, width = 8;
 
 const shape = new THREE.Shape();
