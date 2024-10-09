@@ -188,13 +188,16 @@ export default {
 
             // Clear previous lines
             this.lines = [];
-            for (let i = 0; i < contours.size(); i++) {
+            const extractedLines = [];
+
+          for (let i = 0; i < contours.size(); i++) {
                 const contour = contours.get(i);
                 const points = [];
                 for (let j = 0; j < contour.rows; j++) {
                     points.push(contour.data32S[j * 2], contour.data32S[j * 2 + 1]);
                 }
                 if (points.length > 0) {
+                  // console.log("points : ", points)
                     // Filter by min line length (simple approach, adjust as needed)
                     if (points.length / 2 >= this.minLineLength) {
                         this.lines.push({
@@ -204,9 +207,19 @@ export default {
                             lineCap: "round",
                             lineJoin: "round",
                         });
+                      // is this even good way to extract the lines ?
+                      // increment by 2 cause each point consists of two x and y
+                      for (let j = 0; j < points.length - 2; j += 2) {
+                        extractedLines.push({
+                          start: { x: points[j], y: points[j + 1] },
+                          end: { x: points[j + 2], y: points[j + 3] }
+                        });
+                      }
                     }
                 }
             }
+          this.$emit('linesExtracted', extractedLines)
+          console.log("emiting extracted lines :", extractedLines) // here we good
 
             // Clean up
             src.delete();
