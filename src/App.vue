@@ -1,7 +1,7 @@
 <template>
   
   <div class="clear">
-    <FlorPlanExtraction  v-if="selectedTab == 3"/>
+<!--    <FlorPlanExtraction  v-if="selectedTab == 3"/>-->
     <div class="tabs">
       <v-btn class="tab" @click="selectedTab = 1"> 2D View </v-btn>
       <v-btn class="tab" @click="selectedTab = 2"> 3D View</v-btn>
@@ -15,10 +15,10 @@
         <Layout2D v-if="selectedTab == 1"  :objects="data" @updateData="on2DDataUpdated" @updatePolygons="onUpdatePolygons" @oNAddToStage="addToStage" @onRemove="onRemove" />
       </div>
       <div style="width: 700px">
-        <Layout3D  v-if="selectedTab == 2" :objects="data" :polygons="polygons" @updateData="on3DDataUpdated" />
+        <Layout3D :objects="data" :polygons="polygons" @updateData="on3DDataUpdated" :extractedLines="extractedLines" />
       </div>
       <div >
-        <FlorPlanExtraction  v-if="selectedTab == 3"/>
+        <FlorPlanExtraction  v-if="selectedTab == 3" @linesExtracted="onLinesExtracted" />/>
       </div>
       <!-- <div style="width: 700px">
         <Layout3DTest  v-if="selectedTab == 4" :objects="data" :points="points" @updateData="on3DDataUpdated" />
@@ -54,7 +54,8 @@ export default {
       objects:[],
       data:[],
       // Simple square room
-      polygons:[] 
+      polygons:[],
+      extractedLines: []
     }
   },
   computed:{
@@ -135,6 +136,10 @@ export default {
       selected.scale[0] = scale.x
       selected.scale[1] = scale.y
       this.data[selected.id] = selected
+    },
+    onLinesExtracted(lines) {
+      this.extractedLines = lines;
+      console.log("App.vue onLines: ", this.extractedLines) // i can see the lines here
     }
   },
   async created(){
