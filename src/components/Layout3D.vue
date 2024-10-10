@@ -31,7 +31,7 @@
 import { TresCanvas } from '@tresjs/core';
 import { OrbitControls } from '@tresjs/cientos';
 import { BasicShadowMap, SRGBColorSpace, NoToneMapping } from 'three'
-import Model3D from '@/components/Model3d.vue'
+import Model3D from '@/components/Model3D.vue'
 import { ref, onMounted, watch, computed } from 'vue';
 import {SampleRooms, splitArrayIntoChunks} from "@/helpers/utils"
 import {buildWallFromLine} from "@/helpers/create3dWall"
@@ -50,14 +50,37 @@ const controls = ref(null);
 const camera = ref(null);
 const ratio = 0.005
 
-const wallMeshes = []
+const wallMeshes = ref([])
 
-const props = defineProps(['objects','polygons']);
+const props = defineProps(['objects','polygons','extractedLines']);
 const objects3d = computed(() => {
     return props.objects.map(obj => {
         return { ...mapKonvaTo3D(obj) };
     });
-});
+});``
+
+function updateWalls(lines) {
+  const scene = canvas.value.context.scene;
+
+  wallMeshes.value.forEach(mesh => scene.value.remove(mesh));
+  wallMeshes.value = [];
+
+  lines.forEach(line => {
+    const { wallMesh } = buildWallFromLine(scene.value, [
+      line.start.x * ratio, line.start.y * ratio,
+      line.end.x * ratio, line.end.y * ratio
+    ]);
+    if (wallMesh) wallMeshes.value.push(wallMesh);
+  });
+}
+
+watch(() => props.extractedLines, (newLines) => {
+  console.log("Stignaa liniite: ", newLines); // cudno izgleda na 3d
+  if (newLines && newLines.length > 0) {
+    updateWalls(newLines);
+  }
+}, { deep: true });
+
 
 watch(() => props.polygons, (newPoints) => {
     console.log("L3 props.polygons received",props.polygons)
