@@ -20,6 +20,12 @@
       <div >
         <FlorPlanExtraction  v-if="selectedTab == 3"/>
       </div>
+      <div style="width: 700px">
+        <KonvaDrawing  v-if="selectedTab == 4" @lines-drawn="updateLines" />
+      </div>
+      <div style="width: 700px">
+        <ThreeDWall  v-if="selectedTab == 4"  :linesin="lines"/>
+      </div>
       <!-- <div style="width: 700px">
         <Layout3DTest  v-if="selectedTab == 4" :objects="data" :points="points" @updateData="on3DDataUpdated" />
       </div> -->
@@ -33,6 +39,8 @@ import Layout3D from '@/components/Layout3D.vue'
 import FlorPlanExtraction from '@/components/FlorPlanExtraction.vue'
 import Layout3DTest from '@/components/Layout3DTest.vue'
 import {getObjects} from '@/api/objectsDataApi'
+import KonvaDrawing from '@/components/KonvaDrawing.vue';
+import ThreeDWall from '@/components/ThreeDWall.vue';
 // import {generateUUID} from '@/helpers/utils'
 const paths = ["ASSET.glb", 'https://raw.githubusercontent.com/Tresjs/assets/main/models/gltf/ugly-naked-bunny/ugly-naked-bunny-animated.gltf', 'Blocks.glb']
 const getRandom = (min = 1, max = 10) => {
@@ -45,7 +53,9 @@ export default {
     Layout2D,
     Layout3D,
     Layout3DTest,
-    FlorPlanExtraction
+    FlorPlanExtraction,
+    KonvaDrawing,
+    ThreeDWall
   },
   data() {
     return {
@@ -69,6 +79,9 @@ export default {
     }
   },
   methods: {
+    updateLines(lines) {
+            this.lines = lines;
+        },
     reset() {
       this.data.map(o => o.position[0] = 0)
     },
