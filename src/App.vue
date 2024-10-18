@@ -15,7 +15,7 @@
         <Layout2D v-if="selectedTab == 1"  :objects="data" @updateData="on2DDataUpdated" @updatePolygons="onUpdatePolygons" @oNAddToStage="addToStage" @onRemove="onRemove" />
       </div>
       <div style="width: 700px">
-        <Layout3D :objects="data" :polygons="polygons" @updateData="on3DDataUpdated" :extractedLines="extractedLines" />
+        <Layout3D :objects="data" @updateData="on3DDataUpdated" :extractedLines="extractedLines" />
       </div>
       <div >
         <FlorPlanExtraction  v-if="selectedTab == 3" @linesExtracted="onLinesExtracted" />/>
@@ -134,7 +134,8 @@ export default {
     },
     onUpdatePolygons(polygons){
       console.log("this.polygons.update App",polygons)
-      this.polygons = polygons
+      //this.polygons = polygons
+      this.extractedLines = polygons;
       console.log("this.polygons.update this App",this.polygons)
     },
     on2DDataUpdated(object) {

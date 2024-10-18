@@ -1,5 +1,6 @@
 <template>
   <div>
+    {{polygons}}
     <div id="drag-items">
       <img class="images" src="@/assets/bunny.jpeg" draggable="true" type="bunny" id="bunny" />
       <img class="images" src="@/assets/rubiks-cube.jpg" draggable="true" type="block" id="block" />
@@ -8,39 +9,67 @@
     <v-stage class="stage" ref="stage" :config="stageSize" @mousedown="handleStageMouseDown"
       @touchstart="handleStageMouseDown">
       <v-layer ref="layer">
-        <v-group :config="`group-${item.name}`"  v-for="item in inventory" :key="item.id" @dragstart="handleDragStart" @dragend="handleDragEnd">
+        <v-group :config="`group-${item.name}`" v-for="item in inventory" :key="item.id" @dragstart="handleDragStart"
+          @dragend="handleDragEnd">
           <v-rect :config="item" @transformend="handleTransformEnd" />
-          <v-text :config="{text: 'Some text on canvas', fontSize: 15,x:item.x,y:item.y}"/>
+          <v-text :config="{ text: 'Some text on canvas', fontSize: 15, x: item.x, y: item.y }" />
         </v-group>
         <v-group>
-          <v-line
-            v-if="currentPolygon"
-            :config="{
-              points: currentPolygon.points,
-              stroke: 'black',
-              strokeWidth: 2,
-              closed: true,  // Makes it a polygon by closing the shape
-             
-              lineCap: 'round',
-              lineJoin: 'round',
-            }"
-          />
+          <v-line v-if="currentPolygon" :config="{
+            points: currentPolygon.points,
+            stroke: 'black',
+            strokeWidth: 2,
+            closed: false,  // Makes it a polygon by closing the shape
+
+            lineCap: 'round',
+            lineJoin: 'round',
+          }" />
         </v-group>
-          <v-group>
-            <v-line
-              v-for="(polygon, index) in polygons"
-              :key="index"
-              :config="{
-                points: polygon.points,
-                stroke: 'black',
-                strokeWidth: 2,
-                closed: true,  // Close the polygon
-              
-                lineCap: 'round',
-                lineJoin: 'round',
-              }"
-            />
-          </v-group>
+        <v-group>
+          <v-line v-for="(polygon, index) in polygons" :key="index" :config="{
+            points: polygon.points,
+            stroke: 'black',
+            strokeWidth: 2,
+            closed: true,  // Close the polygon
+
+            lineCap: 'round',
+            lineJoin: 'round',
+          }" />
+        </v-group>
+
+
+        <v-line v-if="currentLine" :config="{
+          points: currentLine.points,
+          stroke: 'black',
+          strokeWidth: 5,
+          lineCap: 'round',
+          lineJoin: 'round',
+        }" />
+
+      
+          <!-- Render all existing lines -->
+          <v-line v-for="(line, index) in lines" :key="index" :config="{
+            points: line.points,
+            stroke: 'black',
+            strokeWidth: 5,
+            lineCap: 'round',
+            lineJoin: 'round',
+            listening: false,
+          }" />
+
+          <v-circle v-for="(line, index) in lines" :key="index" :config="{
+            x: line.points[line.points.length - 2],
+            y: line.points[line.points.length - 1],
+            stroke: 'black',
+            fill: 'red',
+            radius: 10,
+            listening: false,
+          }" @dblclick="handleCircleDblClick" />
+
+    
+
+
+
         <v-transformer ref="transformer" />
       </v-layer>
     </v-stage>
@@ -49,6 +78,7 @@
 
 <script>
 import Konva from "konva";
+import { ref } from "vue";
 const width = window.innerWidth;
 const height = window.innerHeight;
 
@@ -61,14 +91,18 @@ export default {
         height: height,
       },
       selectedShapeName: "",
-      isDragging:false,
+      isDragging: false,
       polygons: [], // All completed polygons
       currentPolygon: null, // The polygon being drawn
+      lines: [],
+      currentLine: null,
+      isDrawing: false,
+      snapTolerance: 20
     };
   },
   computed: {
     inventory() {
-      console.log("this.objects inventory",this.objects)
+      console.log("this.objects inventory", this.objects)
       return Object.values(this.objects).map((obj) => {
         return {
           rotation: 0,
@@ -80,62 +114,82 @@ export default {
           scaleY: 1,
           fill: obj.fill,
           name: `rect-${obj.id}`,
-          id:obj.id,
+          id: obj.id,
           draggable: true,
         };
       });
     },
   },
-  watch:{
-    polygons:{
+  watch: {
+    lines: {
       handler(newValue, oldValue) {
         console.log("this.polygons.update L2")
-       this.$emit("updatePolygons",this.polygons)
+        this.$emit("updatePolygons", this.lines)
       },
       deep: true
     }
   },
   methods: {
+    handleCircleDblClick(event) {
+      // Perform the desired action for the circle
+      console.log("Circle double-clicked!");
 
+      // Stop the event from propagating to the stage
+      event.cancelBubble = true;
+    },
     startDrawing(event) {
       if(this.isDragging) return
+      this.isDrawing = true
       const pos = this.getRelativePointerPosition(event.target.getStage());
-
-      // If a polygon is already being drawn, add a new point
-      if (this.currentPolygon) {
-        this.currentPolygon.points.push(pos.x, pos.y);
-      } else {
-        // Start a new polygon
-        this.currentPolygon = {
-          points: [pos.x, pos.y],
-        };
-      }
+      this.currentLine = {
+        points: [pos.x, pos.y, pos.x, pos.y],
+      };
     },
 
     // Update the last point of the polygon as the user moves the mouse
     updatePolygon(event) {
-      if (!this.currentPolygon) return;
-
+      if(this.isDragging) return
+      if (!this.isDrawing) return
       const pos = this.getRelativePointerPosition(event.target.getStage());
-      const points = [...this.currentPolygon.points];
-      
-      // Update the last point to follow the cursor
-      points[points.length - 2] = pos.x;
-      points[points.length - 1] = pos.y;
+      const newPoints = [...this.currentLine.points];
+      newPoints[2] = pos.x;
+      newPoints[3] = pos.y;
 
-      this.currentPolygon.points = points;
+      this.currentLine.points = newPoints;
     },
 
     // End the drawing and close the polygon
-    endDrawing() {
-      if (this.currentPolygon) {
-        this.polygons.push({ points: [...this.currentPolygon.points] });
+    endDrawing(event) {
+      if(this.isDragging) return
+      if (this.currentLine) {
+        this.lines.push(this.currentLine);
+        // this.polygons.push(this.lines);
+        console.log("this.lines", this.lines)
+        //this.currentLine = null;
       }
-      this.currentPolygon = null;
-      console.log(this.polygons)
+      event.cancelBubble = true;
     },
 
-    
+    // End the drawing and close the polygon
+    stopDrawing() {
+      console.log("stopDrawing")
+      //if (this.currentLine) {
+      const newPoints = [...this.currentLine.points];
+      newPoints[2] = this.lines[0].points[0];
+      newPoints[3] = this.lines[0].points[1];
+
+      this.currentLine.points = newPoints;
+      this.lines.push(this.currentLine);
+      // this.polygons.push(this.lines.slice());
+      console.log("this.lines", this.lines)
+      // this.lines = []
+      this.isDrawing = false
+      this.currentLine = null
+      //}
+
+    },
+
+
 
     // Get mouse position relative to the stage
     getRelativePointerPosition(stage) {
@@ -154,8 +208,9 @@ export default {
       }
     },
 
-    handleDragStart() {
+    handleDragStart(event) {
       this.isDragging = true;
+      event.cancelBubble = true;
     },
     updateData(object) {
       this.$emit("updateData", object);
@@ -163,13 +218,14 @@ export default {
     handleDragEnd(e) {
       this.updateData(e.target);
       this.isDragging = false
+      e.cancelBubble = true;
     },
     degreesToRadians(degrees) {
       return degrees * (Math.PI / 180);
     },
     handleTransformEnd(e) {
 
-      console.log("inventory",this.inventory)
+      console.log("inventory", this.inventory)
 
       const rect = this.inventory.find((r) => r.name === this.selectedShapeName);
       rect.x = e.target.x();
@@ -177,8 +233,9 @@ export default {
       rect.rotation = e.target.rotation();
       rect.scaleX = e.target.scaleX();
       rect.scaleY = e.target.scaleY();
-      console.log("rect.rotation",rect.rotation)
+      console.log("rect.rotation", rect.rotation)
       this.updateData(e.target);
+      e.cancelBubble = true;
     },
     handleStageMouseDown(e) {
       // clicked on stage - clear selection
@@ -204,6 +261,7 @@ export default {
         this.selectedShapeName = "";
       }
       this.updateTransformer();
+      e.cancelBubble = true;
     },
     updateTransformer() {
       // here we need to manually attach or detach Transformer node
@@ -234,8 +292,9 @@ export default {
 
     stage.on("mousedown", this.startDrawing);
     stage.on("mousemove", this.updatePolygon);
-    stage.on("dblclick", this.closePolygon);  // Double-click to close the polygon
-    
+    stage.on("mouseup", this.endDrawing);  // Double-click to close the polygon
+    stage.on("dblclick", this.stopDrawing);
+
     container.tabIndex = 1;
     // focus it
     // also stage will be in focus on its click
@@ -255,13 +314,13 @@ export default {
     container.addEventListener("drop", async function (e) {
       e.preventDefault();
       stage.setPointersPositions(e);
-      that.$emit("oNAddToStage", stage.getPointerPosition(), type,src);
+      that.$emit("oNAddToStage", stage.getPointerPosition(), type, src);
     });
 
     container.addEventListener('keydown', function (e) {
       if (e.code === "Backspace") {
         const node = transformerNode.node()
-        console.log("node",node)
+        console.log("node", node)
         if (!node) return
         that.$emit("onRemove", node);
         transformerNode.nodes([]);

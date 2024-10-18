@@ -113,7 +113,7 @@ const pointB = new THREE.Vector3(x2, 0, y2);
 
 // Wall dimensions
 const wallHeight = 3;   // Wall height
-const wallThickness = 0.2; // Wall thickness
+const wallThickness = 0.1; // Wall thickness
 
 // Calculate the distance between the two points (length of the wall)
 const wallLength = pointA.distanceTo(pointB);

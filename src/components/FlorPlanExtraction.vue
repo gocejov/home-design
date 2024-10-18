@@ -4,10 +4,11 @@
         <!-- Image Input -->
         <input type="file" @change="onImageUpload" />
         <input type="button" value="Hide image" @click="showHideImage" />
+        <input type="button" value="Confirm Flor plan" @click="onConfirmFlorPlan" />
 
         <!-- Canvas to display original image -->
-        <canvas ref="imageCanvas"></canvas>
-        <canvas ref="canvasOutput" width="508" height="472"></canvas>
+        <canvas ref="imageCanvas" style="display:none"></canvas>
+        <!-- <canvas ref="canvasOutput" width="508" height="472"></canvas> -->
 
         <!-- Konva Stage to display extracted lines -->
         <v-stage
@@ -169,6 +170,7 @@ export default {
                 strokeWidth: 2,
                 opacity: 0.5,
             },
+            extractedLines:null
         };
     },
     methods: {
@@ -264,14 +266,18 @@ export default {
                     }
                 }
             }
-          this.$emit('linesExtracted', extractedLines)
-          console.log("emiting extracted lines :", extractedLines) // here we good
+            this.extractedLines = extractedLines
+            // console.log("emiting extracted lines :", extractedLines) // here we good
 
             // Clean up
             src.delete();
             gray.delete();
             edges.delete();
             contours.delete();
+        },
+
+        onConfirmFlorPlan(){
+            this.$emit('linesExtracted', this.lines)
         },
 
         handleLineClick(index) {
