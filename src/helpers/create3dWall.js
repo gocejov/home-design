@@ -122,7 +122,7 @@ const wallLength = pointA.distanceTo(pointB);
 const wallGeometry = new THREE.BoxGeometry(wallLength, wallHeight, wallThickness);
 
 // Wall material
-const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x888888 });
+const wallMaterial = new THREE.MeshBasicMaterial({ color: 0Xf7f7f7 });
 const wallMesh = new THREE.Mesh(wallGeometry, wallMaterial);
 
 // Position the wall at the midpoint between the two points

@@ -1,63 +1,44 @@
 <template>
   <div>
-    {{polygons}}
     <div id="drag-items">
       <img class="images" src="@/assets/bunny.jpeg" draggable="true" type="bunny" id="bunny" />
       <img class="images" src="@/assets/rubiks-cube.jpg" draggable="true" type="block" id="block" />
       <img class="images" src="@/assets/table.jpg" draggable="true" type="asset" id="asset" />
     </div>
+    <input type="file" @change="onImageUpload" />
     <v-stage class="stage" ref="stage" :config="stageSize" @mousedown="handleStageMouseDown"
       @touchstart="handleStageMouseDown">
       <v-layer ref="layer">
+
+        <v-image v-if="displayImage" :config="imageConfig" />
+
         <v-group :config="`group-${item.name}`" v-for="item in inventory" :key="item.id" @dragstart="handleDragStart"
           @dragend="handleDragEnd">
           <v-rect :config="item" @transformend="handleTransformEnd" />
           <v-text :config="{ text: 'Some text on canvas', fontSize: 15, x: item.x, y: item.y }" />
         </v-group>
-        <v-group>
-          <v-line v-if="currentPolygon" :config="{
-            points: currentPolygon.points,
-            stroke: 'black',
-            strokeWidth: 2,
-            closed: false,  // Makes it a polygon by closing the shape
-
-            lineCap: 'round',
-            lineJoin: 'round',
-          }" />
-        </v-group>
-        <v-group>
-          <v-line v-for="(polygon, index) in polygons" :key="index" :config="{
-            points: polygon.points,
-            stroke: 'black',
-            strokeWidth: 2,
-            closed: true,  // Close the polygon
-
-            lineCap: 'round',
-            lineJoin: 'round',
-          }" />
-        </v-group>
 
 
         <v-line v-if="currentLine" :config="{
           points: currentLine.points,
-          stroke: 'black',
+          stroke: '#2196f3',
           strokeWidth: 5,
           lineCap: 'round',
           lineJoin: 'round',
         }" />
 
-      
+        <v-group v-for="(wall, index) in walls" :key="index">
           <!-- Render all existing lines -->
-          <v-line v-for="(line, index) in lines" :key="index" :config="{
+          <v-line v-for="(line, index) in wall" :key="index" :config="{
             points: line.points,
-            stroke: 'black',
+            stroke: '#2196f3',
             strokeWidth: 5,
             lineCap: 'round',
             lineJoin: 'round',
             listening: false,
           }" />
 
-          <v-circle v-for="(line, index) in lines" :key="index" :config="{
+          <v-circle v-if="false" v-for="(line, index) in wall" :key="index" :config="{
             x: line.points[line.points.length - 2],
             y: line.points[line.points.length - 1],
             stroke: 'black',
@@ -65,9 +46,26 @@
             radius: 10,
             listening: false,
           }" @dblclick="handleCircleDblClick" />
+        </v-group>
 
-    
+        <v-line v-for="(line, index) in lines" :key="index" :config="{
+          points: line.points,
+          stroke: '#2196f3',
+          strokeWidth: 5,
+          lineCap: 'round',
+          lineJoin: 'round',
+          listening: false,
+        }" />
 
+        <v-circle v-if="false" v-for="(line, index) in lines" :key="index" :config="{
+          x: line.points[line.points.length - 2],
+          y: line.points[line.points.length - 1],
+          stroke: 'black',
+          fill: 'red',
+          radius: 10,
+          name:`snap-point-${index}`,
+          listening: false,
+        }" @dblclick="handleCircleDblClick" />
 
 
         <v-transformer ref="transformer" />
@@ -87,8 +85,8 @@ export default {
   data() {
     return {
       stageSize: {
-        width: width,
-        height: height,
+        width: 700,
+        height: 500,
       },
       selectedShapeName: "",
       isDragging: false,
@@ -97,10 +95,23 @@ export default {
       lines: [],
       currentLine: null,
       isDrawing: false,
-      snapTolerance: 20
+      snapTolerance: 10,
+      walls: [],
+      imageConfig: {
+        image: null,
+        width: 800,
+        height: 600,
+      },
+      displayImage:true
     };
   },
   computed: {
+    snapPoints() {
+      let points = this.walls ? this.walls.flatMap(w => w.flatMap(l => l.points)) : this.lines.flatMap(l => l.points)
+      console.log("Snap points", points)
+      return points
+    },
+
     inventory() {
       console.log("this.objects inventory", this.objects)
       return Object.values(this.objects).map((obj) => {
@@ -121,15 +132,29 @@ export default {
     },
   },
   watch: {
-    lines: {
+    walls: {
       handler(newValue, oldValue) {
         console.log("this.polygons.update L2")
-        this.$emit("updatePolygons", this.lines)
+        this.$emit("updatePolygons", this.walls)
       },
       deep: true
     }
   },
   methods: {
+    onImageUpload(event) {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.src = e.target.result;
+        img.onload = () => {
+          this.imageConfig.image = img;
+          this.imageConfig.width = this.stageSize.width;
+          this.imageConfig.height = this.stageSize.height;
+        };
+      };
+      reader.readAsDataURL(file);
+    },
     handleCircleDblClick(event) {
       // Perform the desired action for the circle
       console.log("Circle double-clicked!");
@@ -138,7 +163,6 @@ export default {
       event.cancelBubble = true;
     },
     startDrawing(event) {
-      if(this.isDragging) return
       this.isDrawing = true
       const pos = this.getRelativePointerPosition(event.target.getStage());
       this.currentLine = {
@@ -148,26 +172,54 @@ export default {
 
     // Update the last point of the polygon as the user moves the mouse
     updatePolygon(event) {
-      if(this.isDragging) return
       if (!this.isDrawing) return
+
+
       const pos = this.getRelativePointerPosition(event.target.getStage());
+
+
+
+      // Check for snapping
+      let snapX = pos.x;
+      let snapY = pos.y;
+
+      let p = this.snapPoints
+      console.log("Snap P", p)
+
+      for (const pointPos in this.snapPoints) {
+        if (pointPos % 2 == 0) {
+          let point = this.snapPoints[pointPos]
+          let y = this.snapPoints[pointPos - 1]
+          let x = this.snapPoints[pointPos]
+
+          const distance = Math.sqrt(
+            Math.pow(pos.x - x, 2) + Math.pow(pos.y - y, 2)
+          );
+          console.log("distance", distance, pos.x, x, pointPos, distance < this.snapTolerance)
+
+          if (distance < this.snapTolerance) {
+
+            snapX = x;
+            snapY = y;
+          }
+        }
+      };
+
       const newPoints = [...this.currentLine.points];
-      newPoints[2] = pos.x;
-      newPoints[3] = pos.y;
+      newPoints[2] = snapX;
+      newPoints[3] = snapY;
 
       this.currentLine.points = newPoints;
     },
 
     // End the drawing and close the polygon
-    endDrawing(event) {
-      if(this.isDragging) return
+    endDrawing() {
       if (this.currentLine) {
         this.lines.push(this.currentLine);
         // this.polygons.push(this.lines);
         console.log("this.lines", this.lines)
         //this.currentLine = null;
       }
-      event.cancelBubble = true;
     },
 
     // End the drawing and close the polygon
@@ -175,14 +227,14 @@ export default {
       console.log("stopDrawing")
       //if (this.currentLine) {
       const newPoints = [...this.currentLine.points];
-      newPoints[2] = this.lines[0].points[0];
-      newPoints[3] = this.lines[0].points[1];
+      // newPoints[2] = this.lines[0].points[0];
+      // newPoints[3] = this.lines[0].points[1];
 
       this.currentLine.points = newPoints;
       this.lines.push(this.currentLine);
-      // this.polygons.push(this.lines.slice());
+      this.walls.push(this.lines);
       console.log("this.lines", this.lines)
-      // this.lines = []
+      this.lines = []
       this.isDrawing = false
       this.currentLine = null
       //}
@@ -208,9 +260,8 @@ export default {
       }
     },
 
-    handleDragStart(event) {
+    handleDragStart() {
       this.isDragging = true;
-      event.cancelBubble = true;
     },
     updateData(object) {
       this.$emit("updateData", object);
@@ -218,7 +269,6 @@ export default {
     handleDragEnd(e) {
       this.updateData(e.target);
       this.isDragging = false
-      e.cancelBubble = true;
     },
     degreesToRadians(degrees) {
       return degrees * (Math.PI / 180);
@@ -235,7 +285,6 @@ export default {
       rect.scaleY = e.target.scaleY();
       console.log("rect.rotation", rect.rotation)
       this.updateData(e.target);
-      e.cancelBubble = true;
     },
     handleStageMouseDown(e) {
       // clicked on stage - clear selection
@@ -261,7 +310,6 @@ export default {
         this.selectedShapeName = "";
       }
       this.updateTransformer();
-      e.cancelBubble = true;
     },
     updateTransformer() {
       // here we need to manually attach or detach Transformer node
@@ -286,6 +334,9 @@ export default {
   },
   mounted() {
 
+    var shadowOffset = 20;
+    var tween = null;
+    var blockSnapSize = 30;
     const stage = this.$refs.stage.getStage();
     const that = this
     const container = stage.attrs.container
@@ -327,6 +378,26 @@ export default {
       }
       e.preventDefault();
     });
+
+    var gridLayer = new Konva.Layer();
+    var padding = blockSnapSize;
+    console.log(width, padding, width / padding);
+    for (var i = 0; i < width / padding; i++) {
+      gridLayer.add(new Konva.Line({
+        points: [Math.round(i * padding) + 0.5, 0, Math.round(i * padding) + 0.5, height],
+        stroke: '#ddd',
+        strokeWidth: 1,
+      }));
+    }
+
+    gridLayer.add(new Konva.Line({ points: [0, 0, 10, 10] }));
+    for (var j = 0; j < height / padding; j++) {
+      gridLayer.add(new Konva.Line({
+        points: [0, Math.round(j * padding), width, Math.round(j * padding)],
+        stroke: '#ddd',
+        strokeWidth: 0.5,
+      }));
+    }
 
   },
 };

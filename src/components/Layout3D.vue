@@ -18,7 +18,7 @@
                 </Suspense> -->
                 <TresDirectionalLight color="#F78B3D" :position="[3, 3, 3]" :intensity="1" />
                 <TresAmbientLight :intensity="2" />
-                <TresGridHelper />
+                <!-- <TresGridHelper /> -->
             </TresCanvas>
         </div>
     </div>
@@ -48,7 +48,7 @@ const gl = {
 }
 const controls = ref(null);
 const camera = ref(null);
-const ratio = 0.01
+const ratio = 0.1
 
 const wallMeshesRef = ref([])
 
@@ -59,44 +59,34 @@ const objects3d = computed(() => {
     });
 }); ``
 
-function updateWalls(linesin) {
-    const lines = linesin//simplifyData(linesin)
+function updateWalls(rooms) {
     const scene = canvas.value.context.scene.value;
-    console.log("scene.value",scene)
-
-    
     const meshesInScene = []
     wallMeshesRef.value.forEach(mesh => scene.remove(mesh.wallMesh));
-    for(let obj of scene.children){
-        if(obj.type=== "Mesh"){
+    for (let obj of scene.children) {
+        if (obj.type === "Mesh") {
             meshesInScene.push(obj)
         }
     }
 
-    for(let mesh of meshesInScene){
+    for (let mesh of meshesInScene) {
         scene.remove(mesh)
     }
-    console.log("meshesInScene in scene", meshesInScene)
+
     wallMeshesRef.value = [];
 
-    lines.forEach(line => {
-        const lines = splitArrayIntoChunks(line.points, 4)
-        lines.forEach((line, index) => {
-            // if(index%2!=0) return
-            let { wallMesh } = buildWallFromLine(scene, [
-                line[0] * ratio, line[1] * ratio,
-                line[2] * ratio, line[3] * ratio]
-            )
-            console.log("wallMesh",wallMesh)
-            if (wallMesh) wallMeshesRef.value.push(wallMesh)
-        })
-
-        // const { wallMesh } = buildWallFromLine(scene.value, [
-        //   line.start.x * ratio, line.start.y * ratio,
-        //   line.end.x * ratio, line.end.y * ratio
-        // ]);
-        // if (wallMesh) wallMeshes.value.push(wallMesh);
-    });
+    for (let room of rooms) {
+        room.forEach(wall => {
+            const lines = splitArrayIntoChunks(wall.points, 4)
+            lines.forEach((line, index) => {
+                let { wallMesh } = buildWallFromLine(scene, [
+                    line[0] * ratio, line[1] * ratio,
+                    line[2] * ratio, line[3] * ratio]
+                )
+                if (wallMesh) wallMeshesRef.value.push(wallMesh)
+            })
+        });
+    }
 }
 
 watch(() => props.extractedLines, (newLines) => {
